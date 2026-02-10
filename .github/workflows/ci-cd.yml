@@ -73,11 +73,11 @@ jobs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
         TAG_NAME="v${{ steps.set_version.outputs.version }}"
         if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-          echo "Tag $TAG_NAME already exists, skipping"
-        else
-          git tag -a "$TAG_NAME" -m "Release version ${{ steps.set_version.outputs.version }}"
-          git push origin "$TAG_NAME"
+          echo "::error::Tag $TAG_NAME already exists. Cannot create duplicate tag."
+          exit 1
         fi
+        git tag -a "$TAG_NAME" -m "Release version ${{ steps.set_version.outputs.version }}"
+        git push origin "$TAG_NAME"
       
     - name: Publish to NuGet.org
       if: success() && github.ref == 'refs/heads/main'
