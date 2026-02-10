@@ -54,7 +54,7 @@ jobs:
       run: dotnet build Iamfreid.NUnit.DI/Iamfreid.NUnit.DI.csproj --configuration Release --no-restore -p:Version=${{ steps.set_version.outputs.version }}
       
     - name: Run tests
-      run: dotnet test Iamfreid.NUnit.DI.Tests/Iamfreid.NUnit.DI.Tests.csproj --configuration Release --no-build --verbosity normal
+      run: dotnet test Iamfreid.NUnit.DI.Tests/Iamfreid.NUnit.DI.Tests.csproj --configuration Release --verbosity normal
       
     - name: Create artifacts directory
       if: success()
