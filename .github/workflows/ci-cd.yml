@@ -13,6 +13,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -47,8 +50,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore Iamfreid.NUnit.DI.sln
       
-    - name: Build solution
-      run: dotnet build Iamfreid.NUnit.DI.sln --configuration Release --no-restore -p:Version=${{ steps.set_version.outputs.version }}
+    - name: Build project
+      run: dotnet build Iamfreid.NUnit.DI/Iamfreid.NUnit.DI.csproj --configuration Release --no-restore -p:Version=${{ steps.set_version.outputs.version }}
       
     - name: Run tests
       run: dotnet test Iamfreid.NUnit.DI.Tests/Iamfreid.NUnit.DI.Tests.csproj --configuration Release --no-build --verbosity normal
@@ -60,6 +63,20 @@ jobs:
     - name: Pack NuGet package
       if: success()
       run: dotnet pack Iamfreid.NUnit.DI/Iamfreid.NUnit.DI.csproj --configuration Release --no-build --output ./artifacts -p:Version=${{ steps.set_version.outputs.version }}
+      
+    - name: Create and push git tag
+      if: success() && github.ref == 'refs/heads/main'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        TAG_NAME="v${{ steps.set_version.outputs.version }}"
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+          echo "Tag $TAG_NAME already exists, skipping"
+        else
+          git tag -a "$TAG_NAME" -m "Release version ${{ steps.set_version.outputs.version }}"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git push origin "$TAG_NAME"
+        fi
       
     - name: Publish to NuGet.org
       if: success() && github.ref == 'refs/heads/main'
