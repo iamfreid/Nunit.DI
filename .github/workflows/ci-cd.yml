@@ -1,0 +1,66 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+        
+    - name: Read VersionPrefix from Directory.Build.props
+      id: read_version
+      run: |
+        VERSION_PREFIX=$(grep -oP '(?<=<VersionPrefix>)[^<]+' Directory.Build.props | xargs)
+        echo "version_prefix=$VERSION_PREFIX" >> $GITHUB_OUTPUT
+        echo "VersionPrefix: $VERSION_PREFIX"
+        
+    - name: Determine version
+      id: set_version
+      run: |
+        if [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          VERSION="${{ steps.read_version.outputs.version_prefix }}.0"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version for main (release): $VERSION"
+        elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
+          BUILD_NUMBER=${{ github.run_number }}
+          VERSION="${{ steps.read_version.outputs.version_prefix }}.0-dev$BUILD_NUMBER"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version for develop (dev): $VERSION"
+        else
+          VERSION="${{ steps.read_version.outputs.version_prefix }}.0"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version (default): $VERSION"
+        fi
+        
+    - name: Restore dependencies
+      run: dotnet restore Iamfreid.NUnit.DI.sln
+      
+    - name: Build project
+      run: dotnet build Iamfreid.NUnit.DI/Iamfreid.NUnit.DI.csproj --configuration Release --no-restore -p:Version=${{ steps.set_version.outputs.version }}
+      
+    - name: Run tests
+      run: dotnet test Iamfreid.NUnit.DI.Tests/Iamfreid.NUnit.DI.Tests.csproj --configuration Release --no-build --verbosity normal
+      
+    - name: Create artifacts directory
+      if: success()
+      run: mkdir -p ./artifacts
+      
+    - name: Pack NuGet package
+      if: success()
+      run: dotnet pack Iamfreid.NUnit.DI/Iamfreid.NUnit.DI.csproj --configuration Release --no-build --output ./artifacts -p:Version=${{ steps.set_version.outputs.version }}
+      
+    - name: Publish to NuGet.org
+      if: success() && github.ref == 'refs/heads/main'
+      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
