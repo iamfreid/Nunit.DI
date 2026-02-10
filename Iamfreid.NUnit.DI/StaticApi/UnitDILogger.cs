@@ -64,7 +64,7 @@ namespace Iamfreid.NUnit.DI.StaticApi
         private sealed class NullLogger : ILogger
         {
             /// <inheritdoc />
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+            public IDisposable BeginScope<TState>(TState state) => NullDisposable.Instance;
 
             /// <inheritdoc />
             public bool IsEnabled(LogLevel logLevel) => false;
@@ -73,6 +73,23 @@ namespace Iamfreid.NUnit.DI.StaticApi
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
             {
                 
+            }
+        }
+
+        /// <summary>
+        /// A null disposable implementation that performs no operations.
+        /// </summary>
+        private sealed class NullDisposable : IDisposable
+        {
+            public static readonly NullDisposable Instance = new();
+
+            private NullDisposable()
+            {
+            }
+
+            public void Dispose()
+            {
+                // No-op
             }
         }
     }
