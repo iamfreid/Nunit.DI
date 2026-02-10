@@ -9,13 +9,15 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
       
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -74,7 +76,6 @@ jobs:
           echo "Tag $TAG_NAME already exists, skipping"
         else
           git tag -a "$TAG_NAME" -m "Release version ${{ steps.set_version.outputs.version }}"
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
           git push origin "$TAG_NAME"
         fi
       
