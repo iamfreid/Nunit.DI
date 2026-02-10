@@ -47,8 +47,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore Iamfreid.NUnit.DI.sln
       
-    - name: Build project
-      run: dotnet build Iamfreid.NUnit.DI/Iamfreid.NUnit.DI.csproj --configuration Release --no-restore -p:Version=${{ steps.set_version.outputs.version }}
+    - name: Build solution
+      run: dotnet build Iamfreid.NUnit.DI.sln --configuration Release --no-restore -p:Version=${{ steps.set_version.outputs.version }}
       
     - name: Run tests
       run: dotnet test Iamfreid.NUnit.DI.Tests/Iamfreid.NUnit.DI.Tests.csproj --configuration Release --no-build --verbosity normal
