@@ -1,0 +1,10 @@
+*.user
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+.idea/
+.DS_Store
+Iamfreid.Infra/
+*.DotSettings.user
