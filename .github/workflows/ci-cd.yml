@@ -35,16 +35,33 @@ jobs:
       id: set_version
       run: |
         if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-          VERSION="${{ steps.read_version.outputs.version_prefix }}.0"
+          VERSION="${{ steps.read_version.outputs.version_prefix }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version for main (release): $VERSION"
         elif [ "${{ github.ref }}" == "refs/heads/develop" ]; then
-          BUILD_NUMBER=${{ github.run_number }}
-          VERSION="${{ steps.read_version.outputs.version_prefix }}.0-dev$BUILD_NUMBER"
+          VERSION_PREFIX="${{ steps.read_version.outputs.version_prefix }}"
+          TAG_PATTERN="v${VERSION_PREFIX}-dev-"
+          
+          # Получаем все теги для текущей версии и находим максимальный номер билда
+          MAX_BUILD=0
+          for tag in $(git tag -l "${TAG_PATTERN}*" | sort -V); do
+            BUILD_NUM=$(echo "$tag" | sed "s/${TAG_PATTERN}//" | sed 's/^0*//')
+            if [ -z "$BUILD_NUM" ]; then
+              BUILD_NUM=0
+            fi
+            if [ "$BUILD_NUM" -gt "$MAX_BUILD" ]; then
+              MAX_BUILD=$BUILD_NUM
+            fi
+          done
+          
+          # Увеличиваем номер билда на 1
+          NEXT_BUILD=$((MAX_BUILD + 1))
+          BUILD_NUMBER=$(printf "%04d" $NEXT_BUILD)
+          VERSION="${VERSION_PREFIX}-dev-${BUILD_NUMBER}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version for develop (dev): $VERSION"
         else
-          VERSION="${{ steps.read_version.outputs.version_prefix }}.0"
+          VERSION="${{ steps.read_version.outputs.version_prefix }}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version (default): $VERSION"
         fi
@@ -67,7 +84,7 @@ jobs:
       run: dotnet pack Iamfreid.NUnit.DI/Iamfreid.NUnit.DI.csproj --configuration Release --no-build --output ./artifacts -p:Version=${{ steps.set_version.outputs.version }}
       
     - name: Create and push git tag
-      if: success() && github.ref == 'refs/heads/main'
+      if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -80,5 +97,5 @@ jobs:
         git push origin "$TAG_NAME"
       
     - name: Publish to NuGet.org
-      if: success() && github.ref == 'refs/heads/main'
+      if: success() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
       run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
