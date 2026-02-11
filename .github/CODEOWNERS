@@ -1,0 +1,11 @@
+# CODEOWNERS file
+# This file defines who owns code in this repository
+# All pull requests require approval from code owners
+
+# Global owner - requires approval for all files
+* @iamfreid
+
+# Uncomment and modify if you want to specify owners for specific paths:
+# /src/ @your-username
+# /.github/ @your-username
+# /Iamfreid.NUnit.DI/ @your-username
