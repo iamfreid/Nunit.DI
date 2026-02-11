@@ -3,6 +3,8 @@
 Library provides a static interface and Fluent API for using dependency injection in NUnit tests.
 Service registration is available at Fixture, Test, or Global levels.
 
+Some library functions are written for highly specialized tasks. However, for solving 99.99% of tasks, you can use the Global level.
+
 ## Installation
 
 ```bash
